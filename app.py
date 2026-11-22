@@ -38,7 +38,7 @@ div[class*="st-key-cell_"] button:disabled {
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h2 style='margin-bottom: 0;'>Tic-Tac-Toe</h2>", unsafe_allow_html=True)
+st.markdown("<h2 style='text-align: center; margin-bottom: 0.5rem;'>Tic-Tac-Toe</h2>", unsafe_allow_html=True)
 
 if "board" not in st.session_state:
     st.session_state.board = [""] * 9
@@ -178,7 +178,7 @@ col2.metric("Losses", st.session_state.losses)
 col3.metric("Draws", st.session_state.draws)
 col4.metric("Win Rate", f"{win_rate:.0f}%")
 
-st.markdown(f"**{st.session_state.message}**")
+st.markdown(f"<p style='text-align: center; font-weight: bold;'>{st.session_state.message}</p>", unsafe_allow_html=True)
 
 _, board_col, _ = st.columns([0.15, 0.7, 0.15])
 
