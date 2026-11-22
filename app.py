@@ -10,9 +10,12 @@ st.markdown("""
 div.stButton > button {
     aspect-ratio: 1 / 1;
     height: auto;
-    font-size: 36px;
+    width: 100%;
+    padding: 0;
+    font-size: clamp(55px, 10vw, 100px);
     font-weight: bold;
     border-radius: 0;
+    line-height: 1;
 }
 </style>
 """, unsafe_allow_html=True)
