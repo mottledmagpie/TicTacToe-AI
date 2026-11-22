@@ -12,11 +12,32 @@ div.stButton > button {
     height: auto;
     width: 100%;
     padding: 0;
-    font-size: clamp(55px, 10vw, 100px);
+    font-size: clamp(65px, 12vw, 110px);
     font-weight: bold;
     border-radius: 0;
     line-height: 1;
 }
+
+div.stButton > button:has(p) {
+    font-size: clamp(65px, 12vw, 110px);
+}
+
+div.stButton > button:has(p):disabled {
+    opacity: 1;
+}
+
+div.stButton > button:has(p):disabled p {
+    opacity: 1;
+}
+
+div.stButton > button:has(p) p {
+    font-size: inherit;
+}
+
+div.stButton > button[kind="secondary"] {
+    border-radius: 8px;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -171,8 +192,6 @@ st.write(f"Games played: {total}")
 
 st.divider()
 
-st.header("Game Board")
-
 st.write(st.session_state.message)
 
 for row in range(3):
@@ -182,18 +201,26 @@ for row in range(3):
         position = row * 3 + col
         value = st.session_state.board[position]
 
-        columns[col].button(
-            value if value else " ",
-            key=f"cell_{position}",
-            use_container_width=True,
-            disabled=(
-                st.session_state.game_over
-                or value != ""
-                or st.session_state.waiting_for_ai
-            ),
-            on_click=player_move,
-            args=(position,)
-        )
+        if value == "X":
+            label = ":blue[X]"
+        elif value == "O":
+            label = ":red[O]"
+        else:
+            label = " "
+
+        with columns[col]:
+            st.button(
+                label,
+                key=f"cell_{position}",
+                use_container_width=True,
+                disabled=(
+                    st.session_state.game_over
+                    or value != ""
+                    or st.session_state.waiting_for_ai
+                ),
+                on_click=player_move,
+                args=(position,)
+            )
 
 if st.session_state.waiting_for_ai:
     with st.spinner("Computer is thinking..."):
@@ -215,6 +242,8 @@ if st.session_state.waiting_for_ai:
 
     st.session_state.waiting_for_ai = False
     st.rerun()
+
+st.divider()
 
 col1, col2 = st.columns(2)
 
