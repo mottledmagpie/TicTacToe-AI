@@ -1,0 +1,209 @@
+
+import streamlit as st
+import random
+
+st.set_page_config(page_title="Tic-Tac-Toe AI Arena")
+
+st.title("Tic-Tac-Toe AI Arena")
+st.write("Play against the computer and track your game results.")
+
+if "board" not in st.session_state:
+    st.session_state.board = [""] * 9
+    st.session_state.wins = 0
+    st.session_state.losses = 0
+    st.session_state.draws = 0
+    st.session_state.history = []
+    st.session_state.game_over = False
+    st.session_state.message = "Your turn. You are X."
+
+winning_combinations = [
+    (0, 1, 2), (3, 4, 5), (6, 7, 8),
+    (0, 3, 6), (1, 4, 7), (2, 5, 8),
+    (0, 4, 8), (2, 4, 6)
+]
+
+
+def check_winner(board):
+    for a, b, c in winning_combinations:
+        if board[a] == board[b] == board[c] and board[a]:
+            return board[a]
+    return None
+
+
+def minimax(board, maximizing):
+    winner = check_winner(board)
+
+    if winner == "O":
+        return 1
+    if winner == "X":
+        return -1
+    if "" not in board:
+        return 0
+
+    scores = []
+
+    for i in range(9):
+        if board[i] == "":
+            board[i] = "O" if maximizing else "X"
+            scores.append(minimax(board, not maximizing))
+            board[i] = ""
+
+    return max(scores) if maximizing else min(scores)
+
+
+def ai_move(board, difficulty):
+    available = [i for i in range(9) if board[i] == ""]
+
+    if not available:
+        return
+
+    if difficulty == "Easy":
+        move = random.choice(available)
+
+    elif difficulty == "Medium" and random.random() < 0.4:
+        move = random.choice(available)
+
+    else:
+        best_score = float("-inf")
+        move = available[0]
+
+        for i in available:
+            board[i] = "O"
+            score = minimax(board, False)
+            board[i] = ""
+
+            if score > best_score:
+                best_score = score
+                move = i
+
+    board[move] = "O"
+
+
+def end_game(result):
+    st.session_state.game_over = True
+
+    if result == "X":
+        st.session_state.wins += 1
+        st.session_state.message = "You won!"
+        st.session_state.history.insert(0, "Win")
+
+    elif result == "O":
+        st.session_state.losses += 1
+        st.session_state.message = "The computer won."
+        st.session_state.history.insert(0, "Loss")
+
+    else:
+        st.session_state.draws += 1
+        st.session_state.message = "It's a draw."
+        st.session_state.history.insert(0, "Draw")
+
+
+def player_move(position):
+    board = st.session_state.board
+
+    if st.session_state.game_over or board[position] != "":
+        return
+
+    board[position] = "X"
+    winner = check_winner(board)
+
+    if winner:
+        end_game(winner)
+        return
+
+    if "" not in board:
+        end_game(None)
+        return
+
+    ai_move(board, st.session_state.difficulty)
+
+    winner = check_winner(board)
+
+    if winner:
+        end_game(winner)
+    elif "" not in board:
+        end_game(None)
+
+
+st.sidebar.header("Game Settings")
+
+if "difficulty" not in st.session_state:
+    st.session_state.difficulty = "Medium"
+
+st.session_state.difficulty = st.sidebar.selectbox(
+    "AI Difficulty",
+    ["Easy", "Medium", "Hard"],
+    index=["Easy", "Medium", "Hard"].index(
+        st.session_state.difficulty
+    )
+)
+
+st.header("Game Statistics")
+
+total = (
+    st.session_state.wins
+    + st.session_state.losses
+    + st.session_state.draws
+)
+
+win_rate = (
+    st.session_state.wins / total * 100
+    if total > 0 else 0
+)
+
+col1, col2, col3, col4 = st.columns(4)
+
+col1.metric("Wins", st.session_state.wins)
+col2.metric("Losses", st.session_state.losses)
+col3.metric("Draws", st.session_state.draws)
+col4.metric("Win Rate", f"{win_rate:.1f}%")
+
+st.write(f"Games played: {total}")
+
+st.divider()
+
+st.header("Game Board")
+st.write(st.session_state.message)
+
+for row in range(3):
+    columns = st.columns(3)
+
+    for col in range(3):
+        position = row * 3 + col
+        value = st.session_state.board[position]
+
+        columns[col].button(
+            value if value else " ",
+            key=f"cell_{position}",
+            use_container_width=True,
+            disabled=st.session_state.game_over or value != "",
+            on_click=player_move,
+            args=(position,)
+        )
+
+col1, col2 = st.columns(2)
+
+with col1:
+    if st.button("New Game", use_container_width=True):
+        st.session_state.board = [""] * 9
+        st.session_state.game_over = False
+        st.session_state.message = "Your turn. You are X."
+        st.rerun()
+
+with col2:
+    if st.button("Reset Statistics", use_container_width=True):
+        st.session_state.wins = 0
+        st.session_state.losses = 0
+        st.session_state.draws = 0
+        st.session_state.history = []
+        st.rerun()
+
+st.divider()
+
+st.header("Game History")
+
+if st.session_state.history:
+    for number, result in enumerate(st.session_state.history, 1):
+        st.write(f"Game {number}: {result}")
+else:
+    st.write("No games played yet.")
