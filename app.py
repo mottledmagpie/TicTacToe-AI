@@ -2,10 +2,14 @@ import streamlit as st
 import random
 import time
 
-st.set_page_config(page_title="Tic-Tac-Toe", layout="centered")
+st.set_page_config(page_title="Tic-Tac-Toe", layout="centered", initial_sidebar_state="collapsed")
 
 st.markdown("""
 <style>
+[data-testid="stSidebar"] {
+    display: none;
+}
+
 .block-container {
     padding-top: 1.5rem;
     padding-bottom: 1rem;
@@ -45,11 +49,9 @@ if "board" not in st.session_state:
     st.session_state.wins = 0
     st.session_state.losses = 0
     st.session_state.draws = 0
-    st.session_state.history = []
     st.session_state.game_over = False
     st.session_state.waiting_for_ai = False
     st.session_state.message = "Your turn. You are X."
-    st.session_state.difficulty = "Medium"
 
 winning_combinations = [
     (0, 1, 2), (3, 4, 5), (6, 7, 8),
@@ -86,18 +88,14 @@ def minimax(board, maximizing):
     return max(scores) if maximizing else min(scores)
 
 
-def ai_move(board, difficulty):
+def ai_move(board):
     available = [i for i in range(9) if board[i] == ""]
 
     if not available:
         return
 
-    if difficulty == "Easy":
+    if random.random() < 0.4:
         move = random.choice(available)
-
-    elif difficulty == "Medium" and random.random() < 0.4:
-        move = random.choice(available)
-
     else:
         best_score = float("-inf")
         move = available[0]
@@ -120,17 +118,14 @@ def end_game(result):
     if result == "X":
         st.session_state.wins += 1
         st.session_state.message = "You won!"
-        st.session_state.history.insert(0, "Win")
 
     elif result == "O":
         st.session_state.losses += 1
         st.session_state.message = "The computer won."
-        st.session_state.history.insert(0, "Loss")
 
     else:
         st.session_state.draws += 1
         st.session_state.message = "It's a draw."
-        st.session_state.history.insert(0, "Draw")
 
 
 def player_move(position):
@@ -153,21 +148,6 @@ def player_move(position):
 
     st.session_state.waiting_for_ai = True
 
-
-st.sidebar.header("Game Settings")
-st.session_state.difficulty = st.sidebar.selectbox(
-    "AI Difficulty",
-    ["Easy", "Medium", "Hard"],
-    index=["Easy", "Medium", "Hard"].index(st.session_state.difficulty)
-)
-
-st.sidebar.divider()
-st.sidebar.header("Game History")
-if st.session_state.history:
-    for number, result in enumerate(st.session_state.history, 1):
-        st.sidebar.write(f"Game {number}: {result}")
-else:
-    st.sidebar.write("No games played yet.")
 
 total = st.session_state.wins + st.session_state.losses + st.session_state.draws
 win_rate = st.session_state.wins / total * 100 if total > 0 else 0
@@ -214,7 +194,7 @@ with board_col:
 if st.session_state.waiting_for_ai:
     with st.spinner("Computer is thinking..."):
         time.sleep(0.5)
-        ai_move(st.session_state.board, st.session_state.difficulty)
+        ai_move(st.session_state.board)
 
     winner = check_winner(st.session_state.board)
 
@@ -244,5 +224,4 @@ with btn_col:
             st.session_state.wins = 0
             st.session_state.losses = 0
             st.session_state.draws = 0
-            st.session_state.history = []
             st.rerun()
