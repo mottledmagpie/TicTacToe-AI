@@ -1,10 +1,23 @@
 
 import streamlit as st
 import random
+import time
 
-st.set_page_config(page_title="Tic-Tac-Toe AI Arena")
+st.set_page_config(page_title="Tic-Tac-Toe", layout="centered")
 
-st.title("Tic-Tac-Toe AI Arena")
+st.markdown("""
+<style>
+div.stButton > button {
+    aspect-ratio: 1 / 1;
+    height: auto;
+    font-size: 36px;
+    font-weight: bold;
+    border-radius: 0;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.title("Tic-Tac-Toe")
 st.write("Play against the computer and track your game results.")
 
 if "board" not in st.session_state:
@@ -14,7 +27,9 @@ if "board" not in st.session_state:
     st.session_state.draws = 0
     st.session_state.history = []
     st.session_state.game_over = False
+    st.session_state.waiting_for_ai = False
     st.session_state.message = "Your turn. You are X."
+    st.session_state.difficulty = "Medium"
 
 winning_combinations = [
     (0, 1, 2), (3, 4, 5), (6, 7, 8),
@@ -105,6 +120,7 @@ def player_move(position):
         return
 
     board[position] = "X"
+
     winner = check_winner(board)
 
     if winner:
@@ -115,20 +131,10 @@ def player_move(position):
         end_game(None)
         return
 
-    ai_move(board, st.session_state.difficulty)
-
-    winner = check_winner(board)
-
-    if winner:
-        end_game(winner)
-    elif "" not in board:
-        end_game(None)
+    st.session_state.waiting_for_ai = True
 
 
 st.sidebar.header("Game Settings")
-
-if "difficulty" not in st.session_state:
-    st.session_state.difficulty = "Medium"
 
 st.session_state.difficulty = st.sidebar.selectbox(
     "AI Difficulty",
@@ -163,6 +169,7 @@ st.write(f"Games played: {total}")
 st.divider()
 
 st.header("Game Board")
+
 st.write(st.session_state.message)
 
 for row in range(3):
@@ -176,10 +183,35 @@ for row in range(3):
             value if value else " ",
             key=f"cell_{position}",
             use_container_width=True,
-            disabled=st.session_state.game_over or value != "",
+            disabled=(
+                st.session_state.game_over
+                or value != ""
+                or st.session_state.waiting_for_ai
+            ),
             on_click=player_move,
             args=(position,)
         )
+
+if st.session_state.waiting_for_ai:
+    with st.spinner("Computer is thinking..."):
+        time.sleep(0.7)
+
+        ai_move(
+            st.session_state.board,
+            st.session_state.difficulty
+        )
+
+    winner = check_winner(st.session_state.board)
+
+    if winner:
+        end_game(winner)
+    elif "" not in st.session_state.board:
+        end_game(None)
+    else:
+        st.session_state.message = "Your turn. You are X."
+
+    st.session_state.waiting_for_ai = False
+    st.rerun()
 
 col1, col2 = st.columns(2)
 
@@ -187,6 +219,7 @@ with col1:
     if st.button("New Game", use_container_width=True):
         st.session_state.board = [""] * 9
         st.session_state.game_over = False
+        st.session_state.waiting_for_ai = False
         st.session_state.message = "Your turn. You are X."
         st.rerun()
 
